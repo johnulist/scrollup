@@ -1,10 +1,10 @@
 /*
 
- scrollup v2.1.0
+ scrollup v2.3.3
  Author: Mark Goodyear - http://markgoodyear.com
  Git: https://github.com/markgoodyear/scrollup
 
- Copyright 2013 Mark Goodyear.
+ Copyright 2014 Mark Goodyear.
  Licensed under the MIT license
  http://www.opensource.org/licenses/mit-license.php
 
@@ -15,30 +15,40 @@
 
     // Main function
     $.fn.scrollUp = function (options) {
+
         // Ensure that only one scrollUp exists
-        if ( ! $.data( document.body, 'scrollUp' ) ) {
-            $.data( document.body, 'scrollUp', true );
+        if (!$.data(document.body, 'scrollUp')) {
+            $.data(document.body, 'scrollUp', true);
             $.fn.scrollUp.init(options);
         }
     };
 
     // Init
     $.fn.scrollUp.init = function(options) {
+
         // Apply any options to the settings, override the defaults
         var o = $.fn.scrollUp.settings = $.extend({}, $.fn.scrollUp.defaults, options),
 
-        // Set scrollTitle
-        scrollTitle = (o.scrollTitle) ? o.scrollTitle : o.scrollText,
-
         // Create element
-        $self = $('<a/>', {
-            id: o.scrollName,
-            href: '#top',
-            title: scrollTitle
-        }).appendTo('body');
+		$self;
+		if (o.scrollTrigger) {
+			$self = $(o.scrollTrigger);
+		} else {
+	        $self = $('<a/>', {
+	            id: o.scrollName,
+	            href: '#top'
+	        });
+		}
+
+        // Set scrollTitle if there is one
+        if (o.scrollTitle) {
+            $self.attr('title', o.scrollTitle);
+        }
+
+        $self.appendTo('body');
 
         // If not using an image display text
-        if (!o.scrollImg) {
+        if (!(o.scrollImg || o.scrollTrigger)) {
             $self.html(o.scrollText);
         }
 
@@ -54,34 +64,69 @@
             $('<div/>', { id: o.scrollName + '-active' }).css({ position: 'absolute', 'top': o.scrollDistance + 'px', width: '100%', borderTop: '1px dotted' + o.activeOverlay, zIndex: o.zIndex }).appendTo('body');
         }
 
+        // Switch animation type
+        var animIn, animOut, animSpeed, scrollDis;
+
+        switch (o.animation) {
+            case 'fade':
+                animIn  = 'fadeIn';
+                animOut = 'fadeOut';
+                animSpeed = o.animationSpeed;
+                break;
+            case 'slide':
+                animIn  = 'slideDown';
+                animOut = 'slideUp';
+                animSpeed = o.animationSpeed;
+                break;
+            default:
+                animIn  = 'show';
+                animOut = 'hide';
+                animSpeed = 0;
+        }
+
+        // If from top or bottom
+        if (o.scrollFrom === 'top') {
+            scrollDis = o.scrollDistance;
+        } else {
+            scrollDis = $(document).height() - $(window).height() - o.scrollDistance;
+        }
+
+        // Trigger visible false by default
+        var triggerVisible = false;
+
         // Scroll function
         scrollEvent = $(window).scroll(function() {
-            // If from top or bottom
-            if (o.scrollFrom === 'top') {
-                scrollDis = o.scrollDistance;
+            if ( $(window).scrollTop() > scrollDis ) {
+                if (!triggerVisible) {
+                    $self[animIn](animSpeed);
+                    triggerVisible = true;
+                }
             } else {
-                scrollDis = $(document).height() - $(window).height() - o.scrollDistance;
-            }
-
-            // Switch animation type
-            switch (o.animation) {
-                case 'fade':
-                    $( ($(window).scrollTop() > scrollDis) ? $self.fadeIn(o.animationInSpeed) : $self.fadeOut(o.animationOutSpeed) );
-                    break;
-                case 'slide':
-                    $( ($(window).scrollTop() > scrollDis) ? $self.slideDown(o.animationInSpeed) : $self.slideUp(o.animationOutSpeed) );
-                    break;
-                default:
-                    $( ($(window).scrollTop() > scrollDis) ? $self.show(0) : $self.hide(0) );
+                if (triggerVisible) {
+                    $self[animOut](animSpeed);
+                    triggerVisible = false;
+                }
             }
         });
+
+        var scrollTarget;
+        if (o.scrollTarget) {
+            if (typeof o.scrollTarget === 'number') {
+                scrollTarget = o.scrollTarget;
+            } else if (typeof o.scrollTarget === 'string') {
+                scrollTarget = Math.floor($(o.scrollTarget).offset().top);
+            }
+        } else {
+            scrollTarget = 0;
+        }
 
         // To the top
         $self.click(function(e) {
             e.preventDefault();
+
             $('html, body').animate({
-                scrollTop:0
-            }, o.topSpeed, o.easingType);
+                scrollTop: scrollTarget
+            }, o.scrollSpeed, o.easingType);
         });
     };
 
@@ -93,8 +138,9 @@
         scrollSpeed: 300, // Speed back to top (ms)
         easingType: 'linear', // Scroll to top easing (see http://easings.net/)
         animation: 'fade', // Fade, slide, none
-        animationInSpeed: 200, // Animation in speed (ms)
-        animationOutSpeed: 200, // Animation out speed (ms)
+        animationSpeed: 200, // Animation in speed (ms)
+        scrollTrigger: false, // Set a custom triggering element. Can be an HTML string or jQuery object
+        scrollTarget: false, // Set a custom target element for scrolling to. Can be element or number
         scrollText: 'Scroll to top', // Text for element, can contain HTML
         scrollTitle: false, // Set a custom <a> title if required. Defaults to scrollText
         scrollImg: false, // Set true to use image

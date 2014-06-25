@@ -1,5 +1,26 @@
 # Changelog
 
+## 2.3.3
+- Changed animationInSpeed & animationOutSpeed -> animationSpeed
+
+## 2.3.2
+- Allow to fully disable scrollTitle
+
+## 2.3.1
+- Update jQuery to 1.11.0
+- Fix bug with jQuery 1.11.0
+- Optimisations
+
+## 2.3.0
+- Add custom scrollTarget option to override where to scroll back to
+
+## 2.2.0
+- Allow custom scrollTrigger element
+- Add bower.json
+
+## 2.1.1
+- Bug fixes
+
 ## 2.1.0
 - Add option to set a custom title to the <a> tag
 
